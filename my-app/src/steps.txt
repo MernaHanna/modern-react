@@ -1,0 +1,169 @@
+// 1️⃣ Install dependencies
+// Run the following command in your project directory
+// npm install react-router-dom tailwindcss
+
+// 2️⃣ Setup Tailwind (Optional, but recommended for styling)
+// npx tailwindcss init
+
+// tailwind.config.js
+export default {
+  content: ["./src/**/*.{js,jsx,ts,tsx}", "./public/index.html"],
+  theme: { extend: {} },
+  plugins: [],
+};
+
+// 3️⃣ Create the authentication context
+// src/context/AuthContext.tsx
+import React, { createContext, useState, useContext, ReactNode } from "react";
+
+interface AuthContextType {
+  user: string | null;
+  login: (username: string) => void;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<string | null>(localStorage.getItem("user"));
+
+  const login = (username: string) => {
+    setUser(username);
+    localStorage.setItem("user", username);
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("user");
+  };
+
+  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
+// 4️⃣ Create the login component
+// src/pages/Login.tsx
+import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+const Login: React.FC = () => {
+  const [username, setUsername] = useState("");
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogin = () => {
+    auth.login(username);
+    navigate("/");
+  };
+
+  return (
+    <div className="p-4 text-center">
+      <h1 className="text-2xl mb-4">Login</h1>
+      <input
+        type="text"
+        placeholder="Enter username"
+        className="border p-2"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
+      <button className="ml-2 p-2 bg-blue-500 text-white" onClick={handleLogin}>
+        Login
+      </button>
+    </div>
+  );
+};
+
+export default Login;
+
+// 5️⃣ Create the signup component
+// src/pages/Signup.tsx
+import React from "react";
+
+const Signup: React.FC = () => {
+  return (
+    <div className="p-4 text-center">
+      <h1 className="text-2xl">Signup Page</h1>
+      <p>Implement signup logic here</p>
+    </div>
+  );
+};
+
+export default Signup;
+
+// 6️⃣ Create the home page
+// src/pages/Home.tsx
+import React from "react";
+import { useAuth } from "../context/AuthContext";
+
+const Home: React.FC = () => {
+  const auth = useAuth();
+
+  return (
+    <div className="p-4 text-center">
+      <h1 className="text-2xl">Welcome {auth.user ? auth.user : "Guest"}</h1>
+      {auth.user ? (
+        <button className="p-2 bg-red-500 text-white" onClick={auth.logout}>
+          Logout
+        </button>
+      ) : (
+        <p>Please login.</p>
+      )}
+    </div>
+  );
+};
+
+export default Home;
+
+// 7️⃣ Setup React Router
+// src/App.tsx
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <Router>
+        <nav className="p-4 bg-gray-200 flex gap-4">
+          <Link to="/">Home</Link>
+          <Link to="/login">Login</Link>
+          <Link to="/signup">Signup</Link>
+        </nav>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+};
+
+export default App;
+
+// 8️⃣ Entry Point
+// src/main.tsx
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+// 9️⃣ Run the Application
+// npm start
